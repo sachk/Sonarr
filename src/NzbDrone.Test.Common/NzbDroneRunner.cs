@@ -17,6 +17,7 @@ namespace NzbDrone.Test.Common
         private readonly IProcessProvider _processProvider;
         private readonly IRestClient _restClient;
         private Process _nzbDroneProcess;
+        private TextWriter _progressWriter;
 
         public string AppData { get; private set; }
         public string ApiKey { get; private set; }
@@ -36,6 +37,8 @@ namespace NzbDrone.Test.Common
             
             var sonarrConsoleExe = OsInfo.IsWindows ? "Sonarr.Console.exe" : "Sonarr.exe";
 
+            _progressWriter = TestContext.Progress;
+
             if (BuildInfo.IsDebug)
             {
                 Start(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "_output", "Sonarr.Console.exe"));
@@ -51,7 +54,7 @@ namespace NzbDrone.Test.Common
 
                 if (_nzbDroneProcess.HasExited)
                 {
-                    TestContext.Progress.WriteLine("NzbDrone has exited unexpectedly");
+                    _progressWriter.WriteLine("NzbDrone has exited unexpectedly");
                     Thread.Sleep(2000);
                     Assert.Fail("Process has exited: ExitCode={0}", _nzbDroneProcess.ExitCode);
                 }
@@ -64,11 +67,11 @@ namespace NzbDrone.Test.Common
 
                 if (statusCall.ResponseStatus == ResponseStatus.Completed)
                 {
-                    TestContext.Progress.WriteLine("NzbDrone is started. Running Tests");
+                    _progressWriter.WriteLine("NzbDrone is started. Running Tests");
                     return;
                 }
 
-                TestContext.Progress.WriteLine("Waiting for NzbDrone to start. Response Status : {0}  [{1}] {2}", statusCall.ResponseStatus, statusCall.StatusDescription, statusCall.ErrorException.Message);
+                _progressWriter.WriteLine("Waiting for NzbDrone to start. Response Status : {0}  [{1}] {2}", statusCall.ResponseStatus, statusCall.StatusDescription, statusCall.ErrorException.Message);
 
                 Thread.Sleep(500);
             }
@@ -97,7 +100,7 @@ namespace NzbDrone.Test.Common
 
         private void Start(string outputNzbdroneConsoleExe)
         {
-            TestContext.Progress.WriteLine("Starting instance from {0}", outputNzbdroneConsoleExe);
+            _progressWriter.WriteLine("Starting instance from {0}", outputNzbdroneConsoleExe);
 
             var args = "-nobrowser -data=\"" + AppData + "\"";
             _nzbDroneProcess = _processProvider.Start(outputNzbdroneConsoleExe, args, null, OnOutputDataReceived, OnOutputDataReceived);
@@ -106,7 +109,7 @@ namespace NzbDrone.Test.Common
 
         private void OnOutputDataReceived(string data)
         {
-            TestContext.Progress.WriteLine(" > " + data);
+            _progressWriter.WriteLine(" > " + data);
 
             if (data.Contains("Press enter to exit"))
             {

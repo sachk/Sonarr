@@ -109,7 +109,7 @@ namespace NzbDrone.Test.Common
 
         private void OnOutputDataReceived(string data)
         {
-            _progressWriter.WriteLine(" > " + data);
+            _progressWriter.WriteLine(" : " + data);
 
             if (data.Contains("Press enter to exit"))
             {
